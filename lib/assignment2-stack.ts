@@ -122,11 +122,7 @@ export class Assignment2Stack extends cdk.Stack {
     );
 
     newImageTopic.addSubscription(
-      new subs.LambdaSubscription(updateStatusFn, {
-        filterPolicy: {
-          metadata_type: sns.SubscriptionFilter.existsFilter(),
-        },
-      })
+      new subs.LambdaSubscription(updateStatusFn)
     );
 
     // SQS --> Lambda
@@ -152,7 +148,7 @@ export class Assignment2Stack extends cdk.Stack {
 
     imagesTable.grantWriteData(processImageFn);
     imagesTable.grantReadWriteData(addMetadataFn);
-    
+    imagesTable.grantReadWriteData(updateStatusFn);
 
     // Output
     new cdk.CfnOutput(this, "bucketName", {
