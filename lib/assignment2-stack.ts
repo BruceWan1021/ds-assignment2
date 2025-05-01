@@ -145,13 +145,25 @@ export class Assignment2Stack extends cdk.Stack {
     );
 
     newImageTopic.addSubscription(
-      new subs.LambdaSubscription(updateStatusFn)
-    );
+      new subs.LambdaSubscription(updateStatusFn, {
+        filterPolicy: {
+          message_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["status_update"]
+          })
+        }
+      })
+    );    
 
     statusTopic.addSubscription(
-      new subs.SqsSubscription(mailerQ)
+      new subs.SqsSubscription(mailerQ, {
+        filterPolicy: {
+          status: sns.SubscriptionFilter.stringFilter({ 
+            allowlist: ['Pass', 'Reject'] 
+          }),
+        },
+      })
     );
-
+    
 
     // SQS --> Lambda
     const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
