@@ -62,6 +62,20 @@ export class Assignment2Stack extends cdk.Stack {
       }
     );
 
+    const addMetadataFn = new lambdanode.NodejsFunction(
+      this,
+      "addMetadataFn",
+      {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/addMetadata.ts`,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: imagesTable.tableName,
+        }
+      }
+    );
+
     // S3 --> SNS
     imagesBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
@@ -71,6 +85,17 @@ export class Assignment2Stack extends cdk.Stack {
     newImageTopic.addSubscription(
       new subs.SqsSubscription(imageProcessQueue)
     );
+
+    newImageTopic.addSubscription(
+      new subs.LambdaSubscription(addMetadataFn, {
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["Caption", "Date", "name"],
+          }),
+        },
+      })
+    );
+    
 
     // SQS --> Lambda
     const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
@@ -82,9 +107,12 @@ export class Assignment2Stack extends cdk.Stack {
 
     // Permissions
     imagesBucket.grantRead(processImageFn);
+
     processImageFn.addEnvironment("TABLE_NAME", imagesTable.tableName);
     processImageFn.addEnvironment("REGION", this.region);
+
     imagesTable.grantWriteData(processImageFn);
+    imagesTable.grantReadWriteData(addMetadataFn);
 
     // Output
     new cdk.CfnOutput(this, "bucketName", {
