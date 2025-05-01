@@ -73,6 +73,9 @@ export class Assignment2Stack extends cdk.Stack {
 
     processImageFn.addEventSource(newImageEventSource);
 
+    // Permissions
+    imagesBucket.grantRead(processImageFn);
+
     // Output
     new cdk.CfnOutput(this, "bucketName", {
       value: imagesBucket.bucketName,
