@@ -127,7 +127,6 @@ export class Assignment2Stack extends cdk.Stack {
     imagesBucket.grantRead(processImageFn);
     imagesBucket.grantDelete(deleteInvalidImageFn);
 
-
     processImageFn.addEnvironment("TABLE_NAME", imagesTable.tableName);
     processImageFn.addEnvironment("REGION", this.region);
 
