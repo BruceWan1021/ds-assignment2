@@ -38,7 +38,7 @@ export class Assignment2Stack extends cdk.Stack {
 
     const statusTopic = new sns.Topic(this, "StatusUpdateTopic", {
       displayName: "Image status update notifications",
-    });    
+    });
 
     //Queue
     const badImagesQueue = new sqs.Queue(this, "bad-images-q", {
@@ -115,14 +115,14 @@ export class Assignment2Stack extends cdk.Stack {
     );
 
     const mailerFn = new lambdanode.NodejsFunction(
-      this, 
-      "mailer-function", 
+      this,
+      "mailer-function",
       {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(3),
-      entry: `${__dirname}/../lambdas/mailer.ts`,
-    });
+        runtime: lambda.Runtime.NODEJS_16_X,
+        memorySize: 1024,
+        timeout: cdk.Duration.seconds(3),
+        entry: `${__dirname}/../lambdas/mailer.ts`,
+      });
 
     // S3 --> SNS
     imagesBucket.addEventNotification(
@@ -164,8 +164,14 @@ export class Assignment2Stack extends cdk.Stack {
       maxBatchingWindow: cdk.Duration.seconds(5),
     })
 
+    const newImageMailEventSource = new events.SqsEventSource(mailerQ, {
+      batchSize: 5,
+      maxBatchingWindow: cdk.Duration.seconds(5),
+    });
+
     deleteInvalidImageFn.addEventSource(newDeleteImageSource);
     processImageFn.addEventSource(newImageEventSource);
+    mailerFn.addEventSource(newImageMailEventSource);
 
     // Permissions
     imagesBucket.grantRead(processImageFn);
@@ -177,8 +183,20 @@ export class Assignment2Stack extends cdk.Stack {
 
     updateStatusFn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ["sns:Publish"],                  
-        resources: [statusTopic.topicArn],       
+        actions: ["sns:Publish"],
+        resources: [statusTopic.topicArn],
+      })
+    );
+
+    mailerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SendTemplatedEmail",
+        ],
+        resources: ["*"],
       })
     );
 
