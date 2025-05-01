@@ -159,6 +159,10 @@ export class Assignment2Stack extends cdk.Stack {
       value: imagesBucket.bucketName,
     });
 
+    new cdk.CfnOutput(this, "newImageTopicArn", {
+      value: newImageTopic.topicArn,
+    });
+
 
   }
 }
