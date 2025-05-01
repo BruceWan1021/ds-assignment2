@@ -22,10 +22,6 @@ export class Assignment2Stack extends cdk.Stack {
     });
 
     // Integration infrastructure
-    const imageProcessQueue = new sqs.Queue(this, "img-created-queue", {
-      receiveMessageWaitTime: cdk.Duration.seconds(10),
-    });
-
     const newImageTopic = new sns.Topic(this, "NewImageTopic", {
       displayName: "New Image topic",
     });
@@ -35,13 +31,15 @@ export class Assignment2Stack extends cdk.Stack {
       retentionPeriod: Duration.minutes(5),
     });
 
-    const imagesQueue = new sqs.Queue(this, "images-queue", {
+    const imageProcessQueue = new sqs.Queue(this, "img-created-queue", {
+      receiveMessageWaitTime: cdk.Duration.seconds(10),
       deadLetterQueue: {
         queue: badImagesQueue,
         maxReceiveCount: 1,
       },
       retentionPeriod: Duration.minutes(5),
     });
+
 
     // Lambda functions
     const processImageFn = new lambdanode.NodejsFunction(
