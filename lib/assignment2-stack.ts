@@ -7,6 +7,7 @@ import * as events from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from 'constructs';
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -19,6 +20,14 @@ export class Assignment2Stack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       publicReadAccess: false,
+    });
+
+    //Table
+    const imagesTable = new dynamodb.Table(this, "imagesTable", {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: { name: "imageName", type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      tableName: "imagesTable",
     });
 
     // Integration infrastructure
@@ -73,6 +82,9 @@ export class Assignment2Stack extends cdk.Stack {
 
     // Permissions
     imagesBucket.grantRead(processImageFn);
+    processImageFn.addEnvironment("TABLE_NAME", imagesTable.tableName);
+    processImageFn.addEnvironment("REGION", this.region);
+    imagesTable.grantWriteData(processImageFn);
 
     // Output
     new cdk.CfnOutput(this, "bucketName", {
