@@ -59,6 +59,9 @@ export class Assignment2Stack extends cdk.Stack {
         entry: `${__dirname}/../lambdas/processImage.ts`,
         timeout: cdk.Duration.seconds(15),
         memorySize: 128,
+        environment: {
+          TABLE_NAME: imagesTable.tableName,
+        }
       }
     );
 
@@ -142,9 +145,6 @@ export class Assignment2Stack extends cdk.Stack {
     // Permissions
     imagesBucket.grantRead(processImageFn);
     imagesBucket.grantDelete(deleteInvalidImageFn);
-
-    processImageFn.addEnvironment("TABLE_NAME", imagesTable.tableName);
-    processImageFn.addEnvironment("REGION", this.region);
 
     imagesTable.grantWriteData(processImageFn);
     imagesTable.grantReadWriteData(addMetadataFn);
