@@ -8,6 +8,7 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from 'constructs';
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -52,6 +53,10 @@ export class Assignment2Stack extends cdk.Stack {
         maxReceiveCount: 1,
       },
       retentionPeriod: Duration.minutes(5),
+    });
+
+    const mailerQ = new sqs.Queue(this, "mailer-queue", {
+      receiveMessageWaitTime: cdk.Duration.seconds(10),
     });
 
     // Lambda functions
@@ -133,6 +138,11 @@ export class Assignment2Stack extends cdk.Stack {
       new subs.LambdaSubscription(updateStatusFn)
     );
 
+    statusTopic.addSubscription(
+      new subs.SqsSubscription(mailerQ)
+    );
+
+
     // SQS --> Lambda
     const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
       batchSize: 5,
@@ -154,6 +164,13 @@ export class Assignment2Stack extends cdk.Stack {
     imagesTable.grantWriteData(processImageFn);
     imagesTable.grantReadWriteData(addMetadataFn);
     imagesTable.grantReadWriteData(updateStatusFn);
+
+    updateStatusFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["sns:Publish"],                  
+        resources: [statusTopic.topicArn],       
+      })
+    );
 
     // Output
     new cdk.CfnOutput(this, "bucketName", {
