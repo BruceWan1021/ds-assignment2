@@ -114,6 +114,16 @@ export class Assignment2Stack extends cdk.Stack {
       }
     );
 
+    const mailerFn = new lambdanode.NodejsFunction(
+      this, 
+      "mailer-function", 
+      {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(3),
+      entry: `${__dirname}/../lambdas/mailer.ts`,
+    });
+
     // S3 --> SNS
     imagesBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
