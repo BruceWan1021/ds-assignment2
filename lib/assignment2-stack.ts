@@ -35,6 +35,11 @@ export class Assignment2Stack extends cdk.Stack {
       displayName: "New Image topic",
     });
 
+    const statusTopic = new sns.Topic(this, "StatusUpdateTopic", {
+      displayName: "Image status update notifications",
+    });    
+
+    //Queue
     const badImagesQueue = new sqs.Queue(this, "bad-images-q", {
       // # of rejections by consumer (lambda function)
       retentionPeriod: Duration.minutes(5),
@@ -48,7 +53,6 @@ export class Assignment2Stack extends cdk.Stack {
       },
       retentionPeriod: Duration.minutes(5),
     });
-
 
     // Lambda functions
     const processImageFn = new lambdanode.NodejsFunction(
@@ -100,6 +104,7 @@ export class Assignment2Stack extends cdk.Stack {
         memorySize: 128,
         environment: {
           TABLE_NAME: imagesTable.tableName,
+          STATUS_TOPIC_ARN: statusTopic.topicArn,
         }
       }
     );
