@@ -87,6 +87,20 @@ export class Assignment2Stack extends cdk.Stack {
       }
     );
 
+    const updateStatusFn = new lambdanode.NodejsFunction(
+      this,
+      "UpdateStatusFn",
+      {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/updateStatus.ts`,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: imagesTable.tableName,
+        }
+      }
+    );
+
     // S3 --> SNS
     imagesBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
@@ -107,13 +121,13 @@ export class Assignment2Stack extends cdk.Stack {
       })
     );
 
-    deleteInvalidImageFn.addEventSource(
-      new events.SqsEventSource(badImagesQueue, {
-        batchSize: 1,
-        maxBatchingWindow: Duration.seconds(5),
+    newImageTopic.addSubscription(
+      new subs.LambdaSubscription(updateStatusFn, {
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.existsFilter(),
+        },
       })
     );
-    
 
     // SQS --> Lambda
     const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
@@ -121,6 +135,12 @@ export class Assignment2Stack extends cdk.Stack {
       maxBatchingWindow: cdk.Duration.seconds(5),
     });
 
+    const newDeleteImageSource = new events.SqsEventSource(badImagesQueue, {
+      batchSize: 1,
+      maxBatchingWindow: cdk.Duration.seconds(5),
+    })
+
+    deleteInvalidImageFn.addEventSource(newDeleteImageSource);
     processImageFn.addEventSource(newImageEventSource);
 
     // Permissions
@@ -132,6 +152,7 @@ export class Assignment2Stack extends cdk.Stack {
 
     imagesTable.grantWriteData(processImageFn);
     imagesTable.grantReadWriteData(addMetadataFn);
+    
 
     // Output
     new cdk.CfnOutput(this, "bucketName", {
