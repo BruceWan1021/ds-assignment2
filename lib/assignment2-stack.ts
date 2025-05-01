@@ -76,6 +76,17 @@ export class Assignment2Stack extends cdk.Stack {
       }
     );
 
+    const deleteInvalidImageFn = new lambdanode.NodejsFunction(
+      this,
+      "DeleteInvalidImageFn",
+      {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/deleteInvalidImage.ts`,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 128,
+      }
+    );
+
     // S3 --> SNS
     imagesBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
@@ -95,6 +106,13 @@ export class Assignment2Stack extends cdk.Stack {
         },
       })
     );
+
+    deleteInvalidImageFn.addEventSource(
+      new events.SqsEventSource(badImagesQueue, {
+        batchSize: 1,
+        maxBatchingWindow: Duration.seconds(5),
+      })
+    );
     
 
     // SQS --> Lambda
@@ -107,6 +125,8 @@ export class Assignment2Stack extends cdk.Stack {
 
     // Permissions
     imagesBucket.grantRead(processImageFn);
+    imagesBucket.grantDelete(deleteInvalidImageFn);
+
 
     processImageFn.addEnvironment("TABLE_NAME", imagesTable.tableName);
     processImageFn.addEnvironment("REGION", this.region);
