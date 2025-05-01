@@ -8,6 +8,7 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import { Construct } from 'constructs';
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class Assignment2Stack extends cdk.Stack {
@@ -27,6 +28,19 @@ export class Assignment2Stack extends cdk.Stack {
 
     const newImageTopic = new sns.Topic(this, "NewImageTopic", {
       displayName: "New Image topic",
+    });
+
+    const badImagesQueue = new sqs.Queue(this, "bad-images-q", {
+      // # of rejections by consumer (lambda function)
+      retentionPeriod: Duration.minutes(5),
+    });
+
+    const imagesQueue = new sqs.Queue(this, "images-queue", {
+      deadLetterQueue: {
+        queue: badImagesQueue,
+        maxReceiveCount: 1,
+      },
+      retentionPeriod: Duration.minutes(5),
     });
 
     // Lambda functions
@@ -52,12 +66,18 @@ export class Assignment2Stack extends cdk.Stack {
     );
 
     // SQS --> Lambda
-  const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
-    batchSize: 5,
-    maxBatchingWindow: cdk.Duration.seconds(5),
-  });
+    const newImageEventSource = new events.SqsEventSource(imageProcessQueue, {
+      batchSize: 5,
+      maxBatchingWindow: cdk.Duration.seconds(5),
+    });
 
-  processImageFn.addEventSource(newImageEventSource);
-  
+    processImageFn.addEventSource(newImageEventSource);
+
+    // Output
+    new cdk.CfnOutput(this, "bucketName", {
+      value: imagesBucket.bucketName,
+    });
+
+
   }
 }
