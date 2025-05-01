@@ -26,7 +26,6 @@ export const handler: SQSHandler = async (event) => {
     const recordBody = JSON.parse(record.body);
     const snsMessage = JSON.parse(recordBody.Message);
 
-    // 解析状态更新消息
     const { id, status, reason } = snsMessage;
 
     if (!id || !status || !reason) {
