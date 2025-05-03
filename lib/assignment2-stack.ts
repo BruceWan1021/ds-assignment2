@@ -144,6 +144,10 @@ export class Assignment2Stack extends cdk.Stack {
       })
     ); 
 
+    newImageTopic.addSubscription(
+      new subs.LambdaSubscription(updateStatusFn)
+    );    
+
     statusTopic.addSubscription(
       new subs.SqsSubscription(mailerQ, {
         filterPolicy: {
