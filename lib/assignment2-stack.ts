@@ -149,14 +149,8 @@ export class Assignment2Stack extends cdk.Stack {
     );    
 
     statusTopic.addSubscription(
-      new subs.SqsSubscription(mailerQ, {
-        filterPolicy: {
-          status: sns.SubscriptionFilter.stringFilter({ 
-            allowlist: ['Pass', 'Reject'] 
-          }),
-        },
-      })
-    );
+      new subs.SqsSubscription(mailerQ)
+    );    
     
 
     // SQS --> Lambda
