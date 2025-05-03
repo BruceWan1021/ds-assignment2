@@ -142,17 +142,7 @@ export class Assignment2Stack extends cdk.Stack {
           }),
         },
       })
-    );
-
-    newImageTopic.addSubscription(
-      new subs.LambdaSubscription(updateStatusFn, {
-        filterPolicy: {
-          message_type: sns.SubscriptionFilter.stringFilter({
-            allowlist: ["status_update"]
-          })
-        }
-      })
-    );    
+    ); 
 
     statusTopic.addSubscription(
       new subs.SqsSubscription(mailerQ, {

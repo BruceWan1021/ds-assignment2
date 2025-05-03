@@ -19,6 +19,11 @@ export const handler: SNSHandler = async (event) => {
             continue;
         }
 
+        if (!data.update || !data.update.status || !data.update.reason) {
+            console.log("Not a status update message. Skipping.");
+            continue;
+        }
+
         const { id, update } = data;
 
         if (!id || !update?.status || !update?.reason) {
